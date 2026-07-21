@@ -1,0 +1,58 @@
+# ==========================
+# Build folders
+# ==========================
+build/
+out/
+bin/
+
+# ==========================
+# CMake generated files
+# ==========================
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+
+# ==========================
+# Executables
+# ==========================
+*.exe
+*.out
+
+# ==========================
+# Object files
+# ==========================
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+
+# ==========================
+# Debug symbols
+# ==========================
+*.pdb
+
+# ==========================
+# VS Code
+# ==========================
+.vscode/
+
+# (Optional)
+# Keep shared project settings by uncommenting these instead:
+# .vscode/*
+# !.vscode/settings.json
+# !.vscode/tasks.json
+# !.vscode/launch.json
+
+# ==========================
+# Temporary files
+# ==========================
+*.log
+*.tmp
+*.swp
