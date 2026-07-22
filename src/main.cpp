@@ -6,7 +6,7 @@ int main()
     Emulator emulator;
 
     Cartridge cart;
-    if (cart.LoadROM("../tests/test1.gb")) 
+    if (cart.LoadROM("../tests/test3.gb")) 
     {
         std::cout << "ROM loaded\n";
     }
@@ -18,10 +18,12 @@ int main()
     MemoryBus bus;
     bus.SetCartridge(&cart);
 
+    CPU cpu;
+    cpu.SetMemoryBus(&bus);
 
-    std::cout   << std::hex
-                << (int)bus.Read(0)
-                << "\n";
+    cpu.Step();
+    cpu.Step();
+    cpu.Step();
 
     return 0;
     
