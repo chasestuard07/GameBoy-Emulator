@@ -11,4 +11,6 @@ add_executable(GameBoyEmulator
     src/main.cpp
     src/Emulator.cpp
     src/CPU.cpp
+    src/Cartridge.cpp
+    src/MemoryBus.cpp
 )

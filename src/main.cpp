@@ -3,11 +3,25 @@
 
 int main()
 {
-    std::cout << "GameBoy Emulator\n";
-
     Emulator emulator;
 
-    std::cout << "Init complete\n";
+    Cartridge cart;
+    if (cart.LoadROM("../tests/test1.gb")) 
+    {
+        std::cout << "ROM loaded\n";
+    }
+    else
+    {
+        std::cout << "ROM failed to load\n";
+    }
+
+    MemoryBus bus;
+    bus.SetCartridge(&cart);
+
+
+    std::cout   << std::hex
+                << (int)bus.Read(0)
+                << "\n";
 
     return 0;
     
