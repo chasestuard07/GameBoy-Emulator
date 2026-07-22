@@ -6,7 +6,7 @@ int main()
     Emulator emulator;
 
     Cartridge cart;
-    if (cart.LoadROM("../tests/test3.gb")) 
+    if (cart.LoadROM("../tests/test4.gb")) 
     {
         std::cout << "ROM loaded\n";
     }
@@ -21,9 +21,11 @@ int main()
     CPU cpu;
     cpu.SetMemoryBus(&bus);
 
-    cpu.Step();
-    cpu.Step();
-    cpu.Step();
+    for (int i = 0; i < 15; i++) {
+        cpu.Step();
+    }
+    cpu.Debug();
+    
 
     return 0;
     

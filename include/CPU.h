@@ -14,6 +14,8 @@ public:
     void Step();
     void Execute();
 
+    void Debug();
+
 private:
     MemoryBus* bus;
 
@@ -31,4 +33,6 @@ private:
 
     uint8_t opcode;
 
+    void LDrd8(uint8_t& r);
+    void LDrtr(uint8_t& r1 ,uint8_t& r2);
 };
