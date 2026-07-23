@@ -6,7 +6,7 @@ int main()
     Emulator emulator;
 
     Cartridge cart;
-    if (cart.LoadROM("../tests/test7.gb")) 
+    if (cart.LoadROM("../tests/test10.gb")) 
     {
         std::cout << "ROM loaded\n";
     }

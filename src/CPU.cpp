@@ -145,12 +145,103 @@ void CPU::Execute()
         // SCF
         case 0x37: Scf(); break; // SCF
 
+        // SUB r8
+        case 0x90: Sub(B); break; // SUB B
+        case 0x91: Sub(C); break; // SUB C
+        case 0x92: Sub(D); break; // SUB D
+        case 0x93: Sub(E); break; // SUB E
+        case 0x94: Sub(H); break; // SUB H
+        case 0x95: Sub(L); break; // SUB L
+        case 0x97: Sub(A); break; // SUB A
+
+        // SBC A,r8
+        case 0x98: Sbc(B); break; // SBC B
+        case 0x99: Sbc(C); break; // SBC C
+        case 0x9A: Sbc(D); break; // SBC D
+        case 0x9B: Sbc(E); break; // SBC E
+        case 0x9C: Sbc(H); break; // SBC H
+        case 0x9D: Sbc(L); break; // SBC L
+        case 0x9F: Sbc(A); break; // SBC A
+
+        // AND r8
+        case 0xA0: And(B); break; // AND B
+        case 0xA1: And(C); break; // AND C
+        case 0xA2: And(D); break; // AND D
+        case 0xA3: And(E); break; // AND E
+        case 0xA4: And(H); break; // AND H
+        case 0xA5: And(L); break; // AND L
+        case 0xA7: And(A); break; // AND A
+
+        // XOR r8
+        case 0xA8: Xor(B); break; // XOR B
+        case 0xA9: Xor(C); break; // XOR C
+        case 0xAA: Xor(D); break; // XOR D
+        case 0xAB: Xor(E); break; // XOR E
+        case 0xAC: Xor(H); break; // XOR H
+        case 0xAD: Xor(L); break; // XOR L
+        case 0xAF: Xor(A); break; // XOR A
+        
+        // OR r8
+        case 0xB0: Or(B); break; // OR B
+        case 0xB1: Or(C); break; // OR C
+        case 0xB2: Or(D); break; // OR D
+        case 0xB3: Or(E); break; // OR E
+        case 0xB4: Or(H); break; // OR H
+        case 0xB5: Or(L); break; // OR L
+        case 0xB7: Or(A); break; // OR A
+
+        // CP r8
+        case 0xB8: Cp(B); break; // CP B
+        case 0xB9: Cp(C); break; // CP C
+        case 0xBA: Cp(D); break; // CP D
+        case 0xBB: Cp(E); break; // CP E
+        case 0xBC: Cp(H); break; // CP H
+        case 0xBD: Cp(L); break; // CP L
+        case 0xBF: Cp(A); break; // CP A
+
+        // ALU d8 functions 
+        case 0xC6: Add(FetchByte()); break; //ADD A, d8
+        case 0xCE: Adc(FetchByte()); break; //ADC A, d8
+        case 0xD6: Sub(FetchByte()); break; //SUB A, d8
+        case 0xDE: Sbc(FetchByte()); break; //SBC A, d8
+        case 0xE6: And(FetchByte()); break; //AND A, d8
+        case 0xEE: Xor(FetchByte()); break; //XOR A, d8
+        case 0xF6: Or(FetchByte()); break; //OR A, d8
+        case 0xFE: Cp(FetchByte()); break; //CP A, d8
+
+        //LD rr, d16
+        case 0x01: SetBC(FetchWord()); break; //LD BC, d16
+        case 0x11: SetDE(FetchWord()); break; //LD DE, d16
+        case 0x21: SetHL(FetchWord()); break; //LD HL, d16
+        case 0x31: SetSP(FetchWord()); break; //LD SP, d16
+
+        //INC rr
+        case 0x03: SetBC(Inc16(GetBC())); break; //INC BC
+        case 0x13: SetDE(Inc16(GetDE())); break; //INC DE
+        case 0x23: SetHL(Inc16(GetHL())); break; //INC HL
+        case 0x33: SetSP(Inc16(SP)); break; //INC SP
+        
+        //DEC rr
+        case 0x0B: SetBC(Dec16(GetBC())); break; //DEC BC
+        case 0x1B: SetDE(Dec16(GetDE())); break; //DEC DE
+        case 0x2B: SetHL(Dec16(GetHL())); break; //DEC HL
+        case 0x3B: SetSP(Dec16(SP)); break; //DEC SP
+
+        //ADD rr, rr
+        case 0x09: SetHL(Add16(GetHL(), GetBC())); break; //ADD HL, BC 
+        case 0x19: SetHL(Add16(GetHL(), GetDE())); break; //ADD HL, DE 
+        case 0x29: SetHL(Add16(GetHL(), GetHL())); break; //ADD HL, HL 
+        case 0x39: SetHL(Add16(GetHL(), SP)); break; //ADD HL, SP 
+
+
+
 
         default:
             std::cout << "Unknown opcode: "
                       << std::hex
                       << (int)opcode
                       << "\n";
+            halt = true;
             break;
     }
 }
@@ -206,8 +297,68 @@ void CPU::Adc(uint8_t value)
     SetZeroFlag(A == 0);
     SetSubtractFlag(false);
     SetHalfCarryFlag(((og & 0x0F) + (value & 0x0F) + carry) > 0x0F);
-    SetCarryFlag(((og + value) + carry) > 0xFF);
+    SetCarryFlag((og + value + carry) > 0xFF);
 }
+void CPU::Sub(uint8_t value)
+{
+    uint8_t og = A;
+    A -= value;
+
+    SetZeroFlag(A == 0);
+    SetSubtractFlag(true);
+    SetHalfCarryFlag((og & 0x0F) < (value & 0x0F));
+    SetCarryFlag(og < value);
+}
+void CPU::Sbc(uint8_t value)
+{
+    uint8_t og = A;
+    uint8_t carry = GetCarryFlag() ? 1 : 0;
+    A -= (value + carry);
+
+    SetZeroFlag(A == 0);
+    SetSubtractFlag(true);
+    SetHalfCarryFlag((og & 0x0F) < ((value & 0x0F) + carry));
+    SetCarryFlag(og < (value + carry));
+}
+void CPU::And(uint8_t value)
+{
+    A &= value;
+
+    SetZeroFlag(A == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(true);
+    SetCarryFlag(false);
+}
+void CPU::Or(uint8_t value)
+{
+    A |= value;
+
+    SetZeroFlag(A == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(false);
+}
+void CPU::Xor(uint8_t value)
+{
+    A ^= value;
+
+    SetZeroFlag(A == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(false);
+}
+void CPU::Cp(uint8_t value)
+{
+    uint8_t result = A - value;
+
+    SetZeroFlag(result == 0);
+    SetSubtractFlag(true);
+    SetHalfCarryFlag((A & 0x0F) < (value & 0x0F));
+    SetCarryFlag(A < value);
+}
+
+
+
 void CPU::Scf()
 {
     SetCarryFlag(true);
@@ -217,10 +368,79 @@ void CPU::Scf()
 
 
 
+uint16_t CPU::GetBC()
+{
+    return (B << 8) | C;
+}
+void CPU::SetBC(uint16_t value)
+{
+    B = (value >> 8);
+    C = (value & 0x00FF);
+}
+uint16_t CPU::GetDE()
+{
+    return (D << 8) | E;
+}
+void CPU::SetDE(uint16_t value)
+{
+    D = (value >> 8);
+    E = (value & 0x00FF);
+}
+uint16_t CPU::GetHL()
+{
+    return (H << 8) | L;
+}
+void CPU::SetHL(uint16_t value)
+{
+    H = (value >> 8);
+    L = (value & 0x00FF);
+}
+void CPU::SetSP(uint16_t value)
+{
+    SP = value;
+}
+uint16_t CPU::Inc16(uint16_t r)
+{
+    r++;
+    return r;
+}
+uint16_t CPU::Dec16(uint16_t r)
+{
+    r--;
+    return r;
+}
+uint16_t CPU::Add16(uint16_t og, uint16_t value)
+{
+    
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(((og & 0x0FFF) + (value & 0x0FFF)) > 0x0FFF);
+    SetCarryFlag((og + value) > 0xFFFF);
+    return (og + value);
+}
+
+
+
 bool CPU::IsHalted()
 {
     return halt;
 }
+uint8_t CPU::FetchByte()
+{
+    uint8_t value = bus->Read(PC);
+    PC++;
+    return value;
+}
+uint16_t CPU::FetchWord()
+{
+    uint8_t low = bus->Read(PC);
+    PC++;
+
+    uint8_t high = bus->Read(PC);
+    PC++;
+
+    return low | (high << 8);
+}
+
 
 
 void CPU::SetZeroFlag(bool b) 
