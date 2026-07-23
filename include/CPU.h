@@ -16,6 +16,8 @@ public:
 
     void Debug();
 
+    bool IsHalted();
+
 private:
     MemoryBus* bus;
 
@@ -33,6 +35,21 @@ private:
 
     uint8_t opcode;
 
+    bool halt;
+
     void LDrd8(uint8_t& r);
     void LDrtr(uint8_t& r1 ,uint8_t& r2);
+    void Inc(uint8_t& r);
+    void Dec(uint8_t& r);
+    void Add(uint8_t value);
+    void Adc(uint8_t value);
+    void Scf();
+
+
+    void SetZeroFlag(bool b);
+    void SetSubtractFlag(bool b);
+    void SetHalfCarryFlag(bool b);
+    void SetCarryFlag(bool b);
+    bool GetCarryFlag();
+
 };
