@@ -53,6 +53,18 @@ private:
 
 
     void Scf();
+    void Cpl();
+    void Ccf();
+
+
+
+    void Rlca();
+    void Rrca();
+    void Rla();
+    void Rra();
+
+
+
     uint8_t FetchByte();
     uint16_t FetchWord();
 

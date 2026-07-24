@@ -6,7 +6,7 @@ int main()
     Emulator emulator;
 
     Cartridge cart;
-    if (cart.LoadROM("../tests/test10.gb")) 
+    if (cart.LoadROM("../tests/cpu_instrs.gb")) 
     {
         std::cout << "ROM loaded\n";
     }
@@ -24,7 +24,6 @@ int main()
     while (!cpu.IsHalted()) 
     {
         cpu.Step();
-        cpu.Debug();
     }
     
     return 0;

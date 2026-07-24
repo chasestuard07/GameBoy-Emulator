@@ -2,6 +2,12 @@
 
 #include "Cartridge.h"
 
+struct MemoryRegion
+{
+    uint16_t start;
+    uint16_t end;
+};
+
 class MemoryBus
 {
 public:
@@ -14,4 +20,21 @@ public:
 
 private:
     Cartridge* CartridgePtr;
+
+    MemoryRegion ROM       = {0x0000, 0x7FFF};
+    MemoryRegion VRAM      = {0x8000, 0x9FFF};
+    MemoryRegion EXT_RAM   = {0xA000, 0xBFFF};
+    MemoryRegion WRAM      = {0xC000, 0xDFFF};
+    MemoryRegion ECHO_RAM  = {0xE000, 0xFDFF};
+    MemoryRegion OAM       = {0xFE00, 0xFE9F};
+    MemoryRegion IO        = {0xFF00, 0xFF7F};
+    MemoryRegion HRAM      = {0xFF80, 0xFFFE};
+    MemoryRegion IE        = {0xFFFF, 0xFFFF};
+
+    uint8_t wram[0x2000] = {};
+    uint8_t hram[0x7F] = {};
+    uint8_t ie = 0;
+
+    uint8_t serialData;
+
 };

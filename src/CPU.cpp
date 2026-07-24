@@ -142,8 +142,10 @@ void CPU::Execute()
         case 0x8D: Adc(L); break; // ADC A,L
         case 0x8F: Adc(A); break; // ADC A,A
 
-        // SCF
+        // Flag
         case 0x37: Scf(); break; // SCF
+        case 0x2F: Cpl(); break; //CPL
+        case 0x3F: Ccf(); break; //CCF
 
         // SUB r8
         case 0x90: Sub(B); break; // SUB B
@@ -233,7 +235,11 @@ void CPU::Execute()
         case 0x29: SetHL(Add16(GetHL(), GetHL())); break; //ADD HL, HL 
         case 0x39: SetHL(Add16(GetHL(), SP)); break; //ADD HL, SP 
 
-
+        //Rotations
+        case 0x07: Rlca(); break; //RLCA
+        case 0x0F: Rrca(); break; //RRCA
+        case 0x17: Rla(); break; //RLA
+        case 0x1F: Rra(); break; //RRA
 
 
         default:
@@ -365,7 +371,70 @@ void CPU::Scf()
     SetSubtractFlag(false);
     SetHalfCarryFlag(false);
 }
+void CPU::Cpl()
+{
+    A = -A;
 
+    SetSubtractFlag(true);
+    SetHalfCarryFlag(true);
+}
+void CPU::Ccf()
+{
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(!GetCarryFlag());
+}
+
+
+
+void CPU::Rlca()
+{
+    uint8_t carry = (A & 0x80) >> 7;
+
+    A = (A << 1) | carry;
+
+    SetZeroFlag(false);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(carry);
+}
+void CPU::Rrca()
+{
+    uint8_t carry = (A & 0x01);
+
+    A = (A >> 1) | (carry << 7);
+
+    SetZeroFlag(false);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(carry);
+}
+void CPU::Rla()
+{
+    uint8_t oldCarry = GetCarryFlag();
+
+    uint8_t newCarry = (A & 0x80) >> 7;
+
+    A = (A << 1) | oldCarry;
+
+    SetZeroFlag(false);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(newCarry);
+}
+void CPU::Rra()
+{
+    uint8_t oldCarry = GetCarryFlag();
+
+    uint8_t newCarry = A & 0x01;
+
+    A = oldCarry << 7 | (A >> 1);
+
+    SetZeroFlag(false);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(newCarry);
+}
 
 
 uint16_t CPU::GetBC()
