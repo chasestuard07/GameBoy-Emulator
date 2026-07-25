@@ -4,19 +4,22 @@ CPU::CPU()
 {
     bus = nullptr;
 
-    A = 0;
-    B = 0;
-    C = 0;
-    D = 0;
-    E = 0;
-    F = 0;
-    H = 0;
-    L = 0;
+    A  = 0x01;
+    F  = 0xB0;
+    B  = 0x00;
+    C  = 0x13;
+    D  = 0x00;
+    E  = 0xD8;
+    H  = 0x01;
+    L  = 0x4D;
 
-    PC = 0;
-    SP = 0;
+    SP = 0xFFFE;
+    PC = 0x0100;
 
     halt = false;
+    IME = false;
+    InterruptDelayTimer = -1;
+    stop = false;
 }
 
 void CPU::SetMemoryBus(MemoryBus* bus) 
@@ -26,13 +29,12 @@ void CPU::SetMemoryBus(MemoryBus* bus)
 
 void CPU::Step()
 {
-    if (bus == nullptr) 
-    {
-        return;
-    }
+    if (bus == nullptr) return;
+    if (stop) return;
     opcode = bus->Read(PC);
     PC++;
     Execute();
+    HandleInterrupts();
 }
 
 void CPU::Execute()
@@ -241,16 +243,375 @@ void CPU::Execute()
         case 0x17: Rla(); break; //RLA
         case 0x1F: Rra(); break; //RRA
 
+        //JP
+        case 0xC2: Jp(!GetZeroFlag()); break; //JP NZ, a16
+        case 0xC3: Jp(true); break; //JP a16
+        case 0xCA: Jp(GetZeroFlag()); break; // JP Z, a16
+        case 0xD2: Jp(!GetCarryFlag()); break; // JP NC, a16
+        case 0xDA: Jp(GetCarryFlag()); break; // JP C, a16
+        case 0xE9: PC = GetHL(); break; // JP (HL)
+
+        //JR
+        case 0x18: Jr(true); break; //JR r8
+        case 0x20: Jr(!GetZeroFlag()); break; //JR NZ, r8
+        case 0x28: Jr(GetZeroFlag()); break; //JR Z, r8
+        case 0x30: Jr(!GetCarryFlag()); break; //JR NC, r8
+        case 0x38: Jr(GetCarryFlag()); break; //JR C, r8
+
+        //Interrupt Controls
+        case 0xF3: IME = false; break; //DI
+
+        //LD with external memory
+        case 0xE0: bus->Write(0xFF00 + FetchByte(), A); break; //LDH (a8), A
+        case 0xE2: bus->Write(0xFF00 + C, A); break; //LD (C), A
+        case 0xEA: bus->Write(FetchWord(), A); break; //LD (a16), A
+        case 0xF0: A = bus->Read(0xFF00 + FetchByte()); break; //LDH A, (a8)
+        case 0xF2: A = bus->Read(0xFF00 + C); break; //LD A, (C)
+        case 0xFA: A = bus->Read(FetchWord()); break; //LD A, (a16)
+
+        //PUSH
+        case 0xC5: PushWord(GetBC()); return; //PUSH BC
+        case 0xD5: PushWord(GetDE()); return; //PUSH DE
+        case 0xE5: PushWord(GetHL()); return; //PUSH HL
+        case 0xF5: PushWord(GetAF()); return; //PUSH AF
+
+        //POP
+        case 0xC1: SetBC(PopWord()); return; //POP BC
+        case 0xD1: SetDE(PopWord()); return; //POP DE
+        case 0xE1: SetHL(PopWord()); return; //POP HL
+        case 0xF1: SetAF(PopWord()); return; //POP AF
+
+        //CALL
+        case 0xC4: Call(!GetZeroFlag()); return; //CALL NZ, a16
+        case 0xCC: Call(GetZeroFlag()); return; //CALL Z, a16
+        case 0xCD: Call(true); return; //CALL a16
+        case 0xD4: Call(!GetCarryFlag()); return; //CALL NC, a16
+        case 0xDC: Call(GetCarryFlag()); return; //CALL C, a16
+
+        //RET
+        case 0xC0: Ret(!GetZeroFlag()); return; //RET NZ
+        case 0xC8: Ret(GetZeroFlag()); return; //RET Z
+        case 0xC9: Ret(true); return; //RET
+        case 0xD0: Ret(!GetCarryFlag()); return; //RET NC
+        case 0xD8: Ret(GetCarryFlag()); return; //RET C
+        case 0xD9: Reti(); break; //RETI
+
+        //LD between A and (HL +/-)
+        case 0x22: LdHLA(true); return; //LD (HL+), A
+        case 0x2A: LdAHL(true); return; //LD A, (HL+)
+        case 0x32: LdHLA(false); return; //LD (HL-), A
+        case 0x3A: LdHLA(false); return; //LD A, (HL-)
+
+        //LD (HL), r
+        case 0x70: bus->Write(GetHL(), B); break; //LD (HL), B
+        case 0x71: bus->Write(GetHL(), C); break; //LD (HL), C
+        case 0x72: bus->Write(GetHL(), D); break; //LD (HL), D
+        case 0x73: bus->Write(GetHL(), E); break; //LD (HL), E
+        case 0x74: bus->Write(GetHL(), H); break; //LD (HL), H
+        case 0x75: bus->Write(GetHL(), L); break; //LD (HL), L
+        case 0x77: bus->Write(GetHL(), A); break; //LD (HL), A
+
+        //LD r, (HL)
+        case 0x46: B = bus->Read(GetHL()); break; //LD B, (HL)
+        case 0x4E: C = bus->Read(GetHL()); break; //LD C, (HL)
+        case 0x56: D = bus->Read(GetHL()); break; //LD D, (HL)
+        case 0x5E: E = bus->Read(GetHL()); break; //LD E, (HL)
+        case 0x66: H = bus->Read(GetHL()); break; //LD H, (HL)
+        case 0x6E: L = bus->Read(GetHL()); break; //LD L, (HL)
+        case 0x7E: A = bus->Read(GetHL()); break; //LD A, (HL)
+
+        //LD (rr), r & LD r, (rr)
+        case 0x02: bus->Write(GetBC(), A); break; //LD (BC), A
+        case 0x0A: A = bus->Read(GetBC()); break; // LD A, (BC)
+        case 0x12: bus->Write(GetDE(), A); break; //LD (DE), A
+        case 0x1A: A = bus->Read(GetDE()); break; // LD A, (DE)
+        
+
+        //ALU (HL) 
+        case 0x86: Add(bus->Read(GetHL())); break; //ADD A, (HL)
+        case 0x8E: Adc(bus->Read(GetHL())); break; //ADC A, (HL)
+        case 0x96: Sub(bus->Read(GetHL())); break; //SUB (HL)
+        case 0x9E: Sbc(bus->Read(GetHL())); break; //SBC A, (HL)
+        case 0xA6: And(bus->Read(GetHL())); break; //AND (HL)
+        case 0xAE: Xor(bus->Read(GetHL())); break; //XOR (HL)
+        case 0xB6: Or(bus->Read(GetHL())); break; //OR (HL)
+        case 0xBE: Cp(bus->Read(GetHL())); break; //CP (HL)
+
+        //CB
+        case 0xCB: Cb(); break;//CB
+
+        //INC & DEC (HL)
+        case 0x34: IncHL(); break; //INC (HL)
+        case 0x35: DecHL(); break; //DEC (HL)
+
+        //LD SP/HL, HL/SP+r8
+        case 0xF8: LdHLSPr8(); break; //LD HL, SP+r8
+        case 0xF9: SP = GetHL(); break; //LD SP, HL
+
+        //DAA
+        case 0x27: Daa(); break; //DAA
+
+        //EI
+        case 0xFB: InterruptDelayTimer = 1; break; //EI
+
+        //RST
+        case 0xC7: Rst(0x0000); break; // RST 00H
+        case 0xCF: Rst(0x0008); break; // RST 08H
+        case 0xD7: Rst(0x0010); break; // RST 10H
+        case 0xDF: Rst(0x0018); break; // RST 18H
+        case 0xE7: Rst(0x0020); break; // RST 20H
+        case 0xEF: Rst(0x0028); break; // RST 28H
+        case 0xF7: Rst(0x0030); break; // RST 30H
+        case 0xFF: Rst(0x0038); break; // RST 38H
+
+        //LD (HL), d8
+        case 0x36: bus->Write(GetHL(), FetchByte()); break; //LD (HL), d8
+
+        //LD (a16), SP
+        case 0x08: WriteWord(FetchWord(), SP); break; //LD (a16), SP
+
+        //ADD SP, r8
+        case 0xE8: SP = AddSignedSP(FetchByte()); break; //ADD SP, r8
+
+        //STOP
+       case 0x10: Stop(); break; //STOP
 
         default:
             std::cout << "Unknown opcode: "
                       << std::hex
                       << (int)opcode
+                      << "\n"
+                      <<"At PC: "
+                      << std::hex 
+                      << (int)PC
                       << "\n";
             halt = true;
             break;
     }
 }
+
+void CPU::Cb() 
+{
+    uint8_t code = FetchByte();
+
+    uint8_t reg = code & 0x07;
+
+
+    if (code <= 0x07) Rlc(reg); 
+    else if (code <= 0x0F) Rrc(reg);
+    else if (code <= 0x17) Rl(reg);
+    else if (code <= 0x1F) Rr(reg);
+    else if (code <= 0x27) Sla(reg);
+    else if (code <= 0x2F) Sra(reg);
+    else if (code <= 0x37) Swap(reg);
+    else if (code <= 0x3F) Srl(reg);
+    else if (code <= 0x47) Bit(0, reg);
+    else if (code <= 0x4F) Bit(1, reg);
+    else if (code <= 0x57) Bit(2, reg);
+    else if (code <= 0x5F) Bit(3, reg);
+    else if (code <= 0x67) Bit(4, reg);
+    else if (code <= 0x6F) Bit(5, reg);
+    else if (code <= 0x77) Bit(6, reg);
+    else if (code <= 0x7F) Bit(7, reg);
+    else if (code <= 0x87) Res(0, reg);
+    else if (code <= 0x8F) Res(1, reg);
+    else if (code <= 0x97) Res(2, reg);
+    else if (code <= 0x9F) Res(3, reg);
+    else if (code <= 0xA7) Res(4, reg);
+    else if (code <= 0xAF) Res(5, reg);
+    else if (code <= 0xB7) Res(6, reg);
+    else if (code <= 0xBF) Res(7, reg);
+    else if (code <= 0xC7) Set(0, reg);
+    else if (code <= 0xCF) Set(1, reg);
+    else if (code <= 0xD7) Set(2, reg);
+    else if (code <= 0xDF) Set(3, reg);
+    else if (code <= 0xE7) Set(4, reg);
+    else if (code <= 0xEF) Set(5, reg);
+    else if (code <= 0xF7) Set(6, reg);
+    else if (code <= 0xFF) Set(7, reg);
+    else {
+        std::cout << "Unknown CB opcode: "
+                      << std::hex
+                      << (int)opcode
+                      << "\n"
+                      <<"At PC: "
+                      << std::hex 
+                      << (int)PC
+                      << "\n";
+            halt = true;
+    }
+
+}
+uint8_t CPU::ReadCB(uint8_t reg)
+{
+    switch(reg)
+    {
+        case 0: return B;
+        case 1: return C;
+        case 2: return D;
+        case 3: return E;
+        case 4: return H;
+        case 5: return L;
+        case 6: return bus->Read(GetHL());
+        case 7: return A;
+
+        default: return 0xFF;
+    }
+}
+void CPU::WriteCB(uint8_t reg, uint8_t value)
+{
+    switch(reg)
+    {
+        case 0: B = value; break;
+        case 1: C = value; break;
+        case 2: D = value; break;
+        case 3: E = value; break;
+        case 4: H = value; break;
+        case 5: L = value; break;
+        case 6: bus->Write(GetHL(), value); break;
+        case 7: A = value; break;
+    }
+}
+void CPU::Rlc(uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+    uint8_t carry = value >> 7;
+    value = (value << 1) | carry;
+
+    SetZeroFlag(value == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(carry);
+
+    WriteCB(reg, value);
+}
+void CPU::Rrc(uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+    uint8_t carry = (value & 0x01);
+
+    value = (value >> 1) | (carry << 7);
+
+    SetZeroFlag(value == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(carry);
+
+    WriteCB(reg, value);
+}
+void CPU::Rl(uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+    bool oldCarry = GetCarryFlag();
+    bool newCarry = value & 0x80;
+
+    value = value << 1;
+    if (oldCarry) value = value | 1;
+
+    SetZeroFlag(value == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(newCarry);
+
+    WriteCB(reg, value);
+}
+void CPU::Rr(uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+    bool oldCarry = GetCarryFlag();
+    bool newCarry = value & 0x01;
+
+    value = value >> 1;
+    if (oldCarry) value = value | 0x80;
+
+    SetZeroFlag(value == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(newCarry);
+
+    WriteCB(reg, value);
+}
+void CPU::Sla(uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+    bool carry = value & 0x80;
+    value = value << 1;
+
+    SetZeroFlag(value == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(carry);
+
+    WriteCB(reg, value);
+}
+void CPU::Sra(uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+    bool carry = value & 0x01;
+    bool signCarry = value & 0x80;
+    value = value >> 1;
+    if (signCarry) value = 0x80 | value;
+
+    SetZeroFlag(value == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(carry);
+
+    WriteCB(reg, value);
+}
+void CPU::Swap(uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+
+    value = (value << 4) | (value >> 4);
+
+    SetZeroFlag(value == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(false);
+
+    WriteCB(reg, value);
+}
+void CPU::Srl(uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+    bool carry = value & 0x01;
+    value = value >> 1;
+
+    SetZeroFlag(value == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(false);
+    SetCarryFlag(carry);
+
+    WriteCB(reg, value);
+}
+void CPU::Bit(uint8_t bit, uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+    bool bitSet = value & (1 << bit);
+
+    SetZeroFlag(!bitSet);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(true);
+}
+void CPU::Res(uint8_t bit, uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+
+    value &= ~(1 << bit);
+
+    WriteCB(reg, value);
+}
+void CPU::Set(uint8_t bit, uint8_t reg)
+{
+    uint8_t value = ReadCB(reg);
+
+    value |= (1 << bit);
+
+    WriteCB(reg, value);
+}
+
+
 
 
 
@@ -365,6 +726,20 @@ void CPU::Cp(uint8_t value)
 
 
 
+void CPU::Jp(bool condition)
+{
+    uint16_t value = FetchWord();
+
+    if (condition) PC = value;
+}
+void CPU::Jr(bool condition)
+{
+    int8_t offset = static_cast<int8_t>(FetchByte());
+
+    if (condition) PC += offset;
+}
+
+
 void CPU::Scf()
 {
     SetCarryFlag(true);
@@ -373,7 +748,7 @@ void CPU::Scf()
 }
 void CPU::Cpl()
 {
-    A = -A;
+    A = ~A;
 
     SetSubtractFlag(true);
     SetHalfCarryFlag(true);
@@ -436,6 +811,54 @@ void CPU::Rra()
     SetCarryFlag(newCarry);
 }
 
+void CPU::PushWord(uint16_t word)
+{
+    SP--;
+    bus->Write(SP, word >> 8);
+
+    SP--;
+    bus->Write(SP, word & 0xFF);
+
+}
+uint16_t CPU::PopWord()
+{
+    uint8_t low = bus->Read(SP);
+    SP++;
+
+    uint8_t high = bus->Read(SP);
+    SP++;
+
+    return ((high << 8) | low);
+}
+void CPU::WriteWord(uint16_t address, uint16_t value)
+{
+    bus->Write(address, value & 0xFF);
+    bus->Write(address + 1, value >> 8);
+}
+void CPU::Call(bool condition)
+{
+    uint16_t word = FetchWord();
+
+    if (condition)
+    {
+        PushWord(PC);
+        PC = word;
+    }
+}
+void CPU::Ret(bool condition)
+{
+    if (condition) PC = PopWord();
+}
+void CPU::Reti()
+{
+    Ret(true);
+    IME = true;
+}
+void CPU::Rst(uint16_t address)
+{
+    PushWord(PC);
+    PC = address;
+}
 
 uint16_t CPU::GetBC()
 {
@@ -468,6 +891,16 @@ void CPU::SetSP(uint16_t value)
 {
     SP = value;
 }
+uint16_t CPU::GetAF()
+{
+    return (A << 8) | F;
+}
+void CPU::SetAF(uint16_t value)
+{
+    A = (value >> 8);
+    F = (value & 0x00F0);
+}
+
 uint16_t CPU::Inc16(uint16_t r)
 {
     r++;
@@ -486,7 +919,106 @@ uint16_t CPU::Add16(uint16_t og, uint16_t value)
     SetCarryFlag((og + value) > 0xFFFF);
     return (og + value);
 }
+void CPU::LdAHL(bool increment)
+{
+    
+    A = bus->Read(GetHL());
+    
+    if (increment) SetHL(GetHL() + 1);
+    else SetHL(GetHL() - 1);
+}
+void CPU::LdHLA(bool increment)
+{
+    bus->Write(GetHL(), A);
 
+    if (increment) SetHL(GetHL() + 1);
+    else SetHL(GetHL() - 1);
+}
+void CPU::IncHL()
+{
+    uint8_t value = bus->Read(GetHL());
+    bool halfCarry = (value & 0x0F) == 0x0F;
+    value++; 
+    bus->Write(GetHL(), value);
+
+    SetZeroFlag(value == 0);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(halfCarry);
+
+}
+void CPU::DecHL()
+{
+    uint8_t value = bus->Read(GetHL());
+    bool halfCarry = (value & 0x0F) == 0x00;
+    value--; 
+    bus->Write(GetHL(), value);
+
+    SetZeroFlag(value == 0);
+    SetSubtractFlag(true);
+    SetHalfCarryFlag(halfCarry);
+
+}
+void CPU::LdHLSPr8()
+{
+    uint8_t rawOffset = FetchByte();
+    int8_t offset = static_cast<int8_t>(rawOffset);
+    uint16_t result = SP + offset;
+    SetHL(result);
+
+    SetZeroFlag(false);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(((SP & 0x0F) + (rawOffset & 0x0F)) > 0x0F);
+    SetCarryFlag(((SP & 0xFF) + rawOffset) > 0xFF);
+
+}
+
+void CPU::Daa()
+{
+    uint8_t correction = 0;
+    bool carry = false;
+
+    if (!GetSubtractFlag()) // Addition
+    {
+        if (GetHalfCarryFlag() || (A & 0x0F) > 9)
+            correction |= 0x06;
+
+        if (GetCarryFlag() || A > 0x99)
+        {
+            correction |= 0x60;
+            carry = true;
+        }
+
+        A += correction;
+    }
+    else // Subtraction
+    {
+        if (GetHalfCarryFlag())
+            correction |= 0x06;
+
+        if (GetCarryFlag())
+            correction |= 0x60;
+
+        A -= correction;
+    }
+
+    SetZeroFlag(A == 0);
+    SetHalfCarryFlag(false);
+
+    if (carry)
+        SetCarryFlag(true);
+}
+
+uint16_t CPU::AddSignedSP(uint8_t rawOffset)
+{
+    int8_t offset = static_cast<int8_t>(rawOffset);
+
+    SetZeroFlag(false);
+    SetSubtractFlag(false);
+    SetHalfCarryFlag(((SP & 0x0F) + (rawOffset & 0x0F)) > 0x0F);
+    SetCarryFlag(((SP & 0xFF) + rawOffset) > 0xFF);
+
+    return SP + offset;
+}
 
 
 bool CPU::IsHalted()
@@ -517,15 +1049,27 @@ void CPU::SetZeroFlag(bool b)
     if (b == true) F |= 0x80;
     else F &= ~0x80;
 }
+bool CPU::GetZeroFlag()
+{
+    return (F & 0x80);
+}
 void CPU::SetSubtractFlag(bool b)
 {
     if (b == true) F |= 0x40;
     else F &= ~0x40;
 }
+bool CPU::GetSubtractFlag()
+{
+    return (F & 0x40);
+}
 void CPU::SetHalfCarryFlag(bool b)
 {
     if (b == true) F |= 0x20;
     else F &= ~0x20;
+}
+bool CPU::GetHalfCarryFlag()
+{
+    return (F & 0x20);
 }
 void CPU::SetCarryFlag(bool b)
 {
@@ -537,7 +1081,21 @@ bool CPU::GetCarryFlag()
     return (F & 0x10);
 }
 
-
+void CPU::HandleInterrupts()
+{
+    if (InterruptDelayTimer == -1) return;
+    if (InterruptDelayTimer == 0) 
+    {
+        IME = true;
+        InterruptDelayTimer = -1;
+    }
+    else InterruptDelayTimer--;
+}
+void CPU::Stop()
+{
+    FetchByte(); // STOP is followed by a 0x00 byte
+    stop = true;
+}
 
 void CPU::Debug()
 {
