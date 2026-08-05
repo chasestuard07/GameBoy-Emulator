@@ -26,6 +26,10 @@ public:
 
     void Tick(int cycles);
 
+    uint8_t* GetFrameBuffer();
+    bool FrameReady();
+    void ClearFrameReady();
+
 private:
     Cartridge* CartridgePtr;
     Timer timer;

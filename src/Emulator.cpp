@@ -18,13 +18,23 @@ Emulator::Emulator(std::string romPath)
     cpu.SetMemoryBus(&memorybus);
 }
 
-void Emulator::Run()
-{
-    while(true) Step();
-}
-
 void Emulator::Step()
 {
     int cycles = cpu.Step();
     memorybus.Tick(cycles);
+}
+
+uint8_t* Emulator::GetFrameBuffer()
+{
+    return memorybus.GetFrameBuffer();
+}
+
+bool Emulator::FrameReady()
+{
+    return memorybus.FrameReady();
+}
+
+void Emulator::ClearFrameReady()
+{
+    memorybus.ClearFrameReady();
 }

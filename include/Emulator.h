@@ -11,7 +11,9 @@ public:
     Emulator(std::string romPath);
 
     void Step();
-    void Run();
+    uint8_t* GetFrameBuffer();
+    bool FrameReady();
+    void ClearFrameReady();
 
 private:
     Cartridge cartridge;

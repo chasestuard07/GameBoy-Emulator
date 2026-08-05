@@ -20,8 +20,11 @@ public:
 
     bool GetVBlankInterrupt();
     void ClearVBlankInterrupt();
+    bool FrameReady();
+    void ClearFrameReady();
 
     void DoDMA(uint8_t value, uint8_t index);
+    uint8_t* GetFrameBuffer();
 
 private:
     uint8_t lcdc; // FF40
@@ -45,10 +48,18 @@ private:
     int lineCycles;
 
     bool vBlankInterrupt;
+    bool frameReady;
 
     uint8_t mode;
 
     void SetMode(uint8_t newMode);
 
+    uint8_t framebuffer[160 * 144] = {};
+
+    uint8_t GetTilePixel(uint16_t tileAddress, int x, int y);
+    void RenderTile(uint16_t tileAddress, int screenX, int screenY);
+    uint8_t LocateTile(int screenX, int screenY);
+    void RenderScanline();
+    
 
 };

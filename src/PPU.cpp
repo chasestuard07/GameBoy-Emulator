@@ -109,11 +109,17 @@ void PPU::Tick(int cycles)
     {
         lineCycles -= 456;
 
+        if (ly < 144)
+        {
+            RenderScanline();
+        }
+
         ly++;
 
         if (ly == 144)
         {
             vBlankInterrupt = true;
+            frameReady = true;
             SetMode(1);
         }
         else if (ly > 153)
@@ -135,6 +141,18 @@ void PPU::ClearVBlankInterrupt()
     vBlankInterrupt = false;
 }
 
+bool PPU::FrameReady()
+{
+    return frameReady;
+}
+
+void PPU::ClearFrameReady()
+{
+    frameReady = false;
+}
+
+
+
 void PPU::SetMode(uint8_t newMode)
 {
     mode = newMode;
@@ -145,10 +163,65 @@ void PPU::SetMode(uint8_t newMode)
 
 void PPU::DoDMA(uint8_t value, uint8_t index)
 {
-        std::cout << "OAM[" 
-              <<  static_cast<int>(index) 
-              << "] = "
-              <<  static_cast<int>(value)
-              << std::endl;
     oam[index] = value;
+}
+
+uint8_t PPU::GetTilePixel(uint16_t tileAddress, int x, int y)
+{
+    // Each row takes 2 bytes
+    uint16_t rowAddress = tileAddress + (y * 2);
+
+    uint8_t lowByte = vram[rowAddress - 0x8000];
+    uint8_t highByte = vram[rowAddress - 0x8000 + 1];
+
+    // Pixels are stored left-to-right in bits 7-0
+    int bit = 7 - x;
+
+    uint8_t lowBit = (lowByte >> bit) & 1;
+    uint8_t highBit = (highByte >> bit) & 1;
+
+    return (highBit << 1) | lowBit;
+}
+void PPU::RenderTile(uint16_t tileAddress, int screenX, int screenY)
+{
+    for(int y = 0; y < 8; y++)
+    {
+        for(int x = 0; x < 8; x++)
+        {
+            uint8_t color = GetTilePixel(tileAddress, x, y);
+
+            framebuffer[(screenY + y) * 160 + (screenX + x)] = color;
+        }
+    }
+}
+uint8_t PPU::LocateTile(int screenX, int screenY)
+{
+    int tileX = screenX / 8;
+    int tileY = screenY / 8;
+
+    uint16_t tileMapAddress = 0x9800 + (tileY * 32) + tileX;
+    uint8_t tileNumber = vram[tileMapAddress - 0x8000];
+    return tileNumber;
+}
+
+void PPU::RenderScanline()
+{
+    int y = ly;
+    
+    for(int x = 0; x < 159; x++) 
+    {
+        uint8_t tileNumber = LocateTile(x, y);
+        uint16_t tileAddress = 0x8000 + (tileNumber * 16);
+        int pixelX = x % 8;
+        int pixelY = y % 8;
+        uint8_t color = GetTilePixel(tileAddress, pixelX, pixelY);
+
+        framebuffer[y * 160 + x] = color;
+    }
+}
+
+
+uint8_t* PPU::GetFrameBuffer()
+{
+    return framebuffer;
 }

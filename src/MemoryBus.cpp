@@ -148,7 +148,6 @@ void MemoryBus::Write(uint16_t address, uint8_t value)
         {
             if(address == 0xFF46)
             {
-                std::cout << "DMA triggered\n";
                 uint16_t source = value << 8;
 
                 for(int i = 0; i < 0xA0; i++)
@@ -193,4 +192,19 @@ void MemoryBus::Tick(int cycles)
         If |= 0x01;
         ppu.ClearVBlankInterrupt();
     }
+}
+
+uint8_t* MemoryBus::GetFrameBuffer()
+{
+    return ppu.GetFrameBuffer();
+}
+
+bool MemoryBus::FrameReady()
+{
+    return ppu.FrameReady();
+}
+
+void MemoryBus::ClearFrameReady()
+{
+    ppu.ClearFrameReady();
 }
