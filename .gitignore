@@ -56,3 +56,9 @@ Testing/
 *.log
 *.tmp
 *.swp
+
+# ==========================
+# Testing
+# ==========================
+*.gb
+/Trace Compariso

@@ -3,6 +3,8 @@
 #include "MemoryBus.h"
 #include <cstdint>
 #include <iostream>
+#include <fstream>
+#include <iomanip>
 
 class CPU
 {
@@ -11,18 +13,24 @@ public:
     
     void SetMemoryBus(MemoryBus* bus);
     
-    void Step();
-    void Execute();
+    int Step();
+    int Execute();
 
     void Debug();
 
     bool IsHalted();
+
+    bool debugMode;
 
 private:
     MemoryBus* bus;
     uint8_t opcode;
     bool halt;
     bool IME;
+
+    std::ofstream trace;
+
+
     int InterruptDelayTimer;
     bool stop;
 
@@ -37,7 +45,7 @@ private:
     uint16_t PC;
     uint16_t SP;
 
-    void Cb();
+    int Cb();
     uint8_t ReadCB(uint8_t reg);
     void WriteCB(uint8_t reg, uint8_t value);
     void Rlc(uint8_t reg);
@@ -66,14 +74,14 @@ private:
     void Xor(uint8_t value);
     void Cp(uint8_t value);
 
-    void Jp(bool condition);
-    void Jr(bool condition);
+    bool Jp(bool condition);
+    bool Jr(bool condition);
 
     void Scf();
     void Cpl();
     void Ccf();
 
-
+    void Di();
 
     void Rlca();
     void Rrca();
@@ -88,8 +96,8 @@ private:
 
     uint8_t FetchByte();
     uint16_t FetchWord();
-    void Call(bool condition);
-    void Ret(bool condition);
+    bool Call(bool condition);
+    bool Ret(bool condition);
     void Reti();
     void Rst(uint16_t address);
 
@@ -128,6 +136,7 @@ private:
     bool GetCarryFlag();
 
     void HandleInterrupts();
+    void HandleIE();
     void Stop();
 
 };

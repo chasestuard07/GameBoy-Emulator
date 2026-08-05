@@ -13,4 +13,7 @@ add_executable(GameBoyEmulator
     src/CPU.cpp
     src/Cartridge.cpp
     src/MemoryBus.cpp
+    src/Timer.cpp
+    src/Joypad.cpp
+    src/PPU.cpp
 )

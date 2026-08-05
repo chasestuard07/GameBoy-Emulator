@@ -2,14 +2,19 @@
 
 #include "Cartridge.h"
 #include "CPU.h"
-#include "Joypad.h"
 #include "MemoryBus.h"
 #include "PPU.h"
-#include "Timer.h"
 
 class Emulator
 {
 public:
-    Emulator();
+    Emulator(std::string romPath);
 
+    void Step();
+    void Run();
+
+private:
+    Cartridge cartridge;
+    CPU cpu;
+    MemoryBus memorybus;
 };
