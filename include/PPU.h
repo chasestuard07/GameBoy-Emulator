@@ -60,6 +60,7 @@ private:
     void RenderTile(uint16_t tileAddress, int screenX, int screenY);
     uint8_t LocateTile(int screenX, int screenY);
     void RenderScanline();
+    void RenderSprites();
     
 
 };

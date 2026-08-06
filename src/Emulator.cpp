@@ -38,3 +38,8 @@ void Emulator::ClearFrameReady()
 {
     memorybus.ClearFrameReady();
 }
+
+Joypad* Emulator::GetJoypad()
+{
+    return memorybus.GetJoypad();
+}

@@ -126,6 +126,11 @@ void MemoryBus::Write(uint16_t address, uint8_t value)
     }
     else if (address >= IO.start && address <= IO.end)
     {  
+        if(address == 0xFF00)
+        {
+            joypad.Write(value);
+            return;
+        }
         if (address == 0xFF01) 
         {
             serialData = value; 
@@ -207,4 +212,9 @@ bool MemoryBus::FrameReady()
 void MemoryBus::ClearFrameReady()
 {
     ppu.ClearFrameReady();
+}
+
+Joypad* MemoryBus::GetJoypad()
+{
+    return &joypad;
 }

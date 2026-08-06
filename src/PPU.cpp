@@ -112,6 +112,7 @@ void PPU::Tick(int cycles)
         if (ly < 144)
         {
             RenderScanline();
+            RenderSprites();
         }
 
         ly++;
@@ -208,7 +209,7 @@ void PPU::RenderScanline()
 {
     int y = ly;
     
-    for(int x = 0; x < 159; x++) 
+    for(int x = 0; x <= 159; x++) 
     {
         uint8_t tileNumber = LocateTile(x, y);
         uint16_t tileAddress = 0x8000 + (tileNumber * 16);
@@ -218,6 +219,45 @@ void PPU::RenderScanline()
 
         framebuffer[y * 160 + x] = color;
     }
+}
+void PPU::RenderSprites()
+{
+    for(int i = 0; i < 40; i++)
+    {
+        uint8_t index = i * 4; 
+        uint8_t spriteY = oam[index];
+        uint8_t spriteX = oam[index + 1];
+        uint8_t tile = oam[index + 2];
+        uint8_t attributes = oam[index + 3];
+
+        int screenY = spriteY - 16;
+        int screenX = spriteX - 8;
+
+        if (ly >= screenY && ly < screenY + 8)
+        {
+            uint8_t currentRow = ly - screenY;
+            uint16_t tileAddress = 0x8000 + (tile * 16);
+            uint16_t address = tileAddress + (currentRow * 2);
+    
+            for (int x = 0; x < 8; x++)
+            {
+                int bit = 7 - x;
+
+                uint8_t lowByte = vram[address - 0x8000];
+                uint8_t highByte = vram[address - 0x8000 + 1];
+                uint8_t lowBit = (lowByte >> bit) & 1;
+                uint8_t highBit = (highByte >> bit) & 1;
+
+                int color = (highBit << 1) | lowBit;
+                if(color != 0)
+                {
+                    framebuffer[ly * 160 + (screenX + x)] = color;
+                }
+            }
+            
+        }
+
+    }   
 }
 
 

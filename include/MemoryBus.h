@@ -29,6 +29,7 @@ public:
     uint8_t* GetFrameBuffer();
     bool FrameReady();
     void ClearFrameReady();
+    Joypad* GetJoypad();
 
 private:
     Cartridge* CartridgePtr;
