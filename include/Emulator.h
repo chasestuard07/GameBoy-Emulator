@@ -8,13 +8,15 @@
 class Emulator
 {
 public:
-    Emulator(std::string romPath);
+    Emulator();
 
     void Step();
     uint8_t* GetFrameBuffer();
     bool FrameReady();
     void ClearFrameReady();
     Joypad* GetJoypad();
+    bool setROM(std::string romPath);
+    void Reset();
 
 private:
     Cartridge cartridge;

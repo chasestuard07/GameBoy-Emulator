@@ -1185,20 +1185,25 @@ void CPU::Stop()
 
 void CPU::Debug()
 {
-    if (trace.is_open())
-{
-    trace << std::hex << std::uppercase
-          << std::setfill('0')
-          << "PC=" << std::setw(4) << PC
-          << " AF=" << std::setw(4) << ((A << 8) | F)
-          << " BC=" << std::setw(4) << ((B << 8) | C)
-          << " DE=" << std::setw(4) << ((D << 8) | E)
-          << " HL=" << std::setw(4) << ((H << 8) | L)
-          << " SP=" << std::setw(4) << SP
-          << " OP=" << std::setw(2) << (int)bus->Read(PC)
-          << " IME=" << IME
-          << " IE=" << std::setw(2) << (int)bus->ie
-          << " IF=" << std::setw(2) << (int)bus->If
-          << "\n";
+    std::cout << std::hex << PC << "\n";
 }
+
+void CPU::Reset()
+{
+    A  = 0x01;
+    F  = 0xB0;
+    B  = 0;
+    C  = 0x13;
+    D  = 0x00;
+    E  = 0xD8;
+    H  = 0x01;
+    L  = 0x4D;
+
+    SP = 0xFFFE;
+    PC = 0x0100;
+
+    halt = false;
+    IME = false;
+    InterruptDelayTimer = -1;
+    stop = false;
 }

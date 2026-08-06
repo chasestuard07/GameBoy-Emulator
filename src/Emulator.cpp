@@ -3,17 +3,8 @@
 #include <thread>
 #include <chrono>
 
-Emulator::Emulator(std::string romPath)
+Emulator::Emulator()
 {
-    if(!cartridge.LoadROM(romPath))
-    {
-        std::cout << "Failed to load ROM\n";
-        return;
-    }
-
-    std::cout << "ROM loaded\n";
-    
-    cartridge.LoadROM(romPath); 
     memorybus.SetCartridge(&cartridge);
     cpu.SetMemoryBus(&memorybus);
 }
@@ -42,4 +33,17 @@ void Emulator::ClearFrameReady()
 Joypad* Emulator::GetJoypad()
 {
     return memorybus.GetJoypad();
+}
+
+bool Emulator::setROM(std::string romPath)
+{
+    if (cartridge.LoadROM(romPath)) return true;
+
+    std::cout << "Failed to load ROM"; return false;
+}
+
+void Emulator::Reset()
+{
+    cpu.Reset();
+    memorybus.Reset();
 }

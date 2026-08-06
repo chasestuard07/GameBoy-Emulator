@@ -30,6 +30,7 @@ public:
     bool FrameReady();
     void ClearFrameReady();
     Joypad* GetJoypad();
+    void Reset();
 
 private:
     Cartridge* CartridgePtr;

@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(SDL2 REQUIRED)
+add_subdirectory(libraries/nativefiledialog-extended-master)
+
 
 include_directories(include)
 
@@ -19,6 +21,8 @@ add_executable(GameBoyEmulator
     src/Joypad.cpp
     src/PPU.cpp
     src/Display.cpp
+    src/FileDialog.cpp
 )
 
 target_link_libraries(GameBoyEmulator PRIVATE SDL2::SDL2)
+target_link_libraries(GameBoyEmulator PRIVATE nfd)

@@ -22,6 +22,8 @@ public:
 
     bool debugMode;
 
+    void Reset();
+
 private:
     MemoryBus* bus;
     uint8_t opcode;

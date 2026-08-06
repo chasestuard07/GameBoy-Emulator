@@ -25,6 +25,7 @@ public:
 
     void DoDMA(uint8_t value, uint8_t index);
     uint8_t* GetFrameBuffer();
+    void Reset();
 
 private:
     uint8_t lcdc; // FF40

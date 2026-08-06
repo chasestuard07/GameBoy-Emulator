@@ -105,29 +105,62 @@ void PPU::Tick(int cycles)
 {
     lineCycles += cycles;
 
-    while (lineCycles >= 456)
+    switch(mode)
     {
-        lineCycles -= 456;
+        case 2: // OAM
+            if(lineCycles >= 80)
+            {
+                lineCycles -= 80;
+                SetMode(3);
+            }
+            break;
 
-        if (ly < 144)
-        {
-            RenderScanline();
-            RenderSprites();
-        }
+        case 3: // Pixel transfer
+            if(lineCycles >= 172)
+            {
+                lineCycles -= 172;
 
-        ly++;
+                RenderScanline();
+                RenderSprites();
 
-        if (ly == 144)
-        {
-            vBlankInterrupt = true;
-            frameReady = true;
-            SetMode(1);
-        }
-        else if (ly > 153)
-        {
-            ly = 0;
-            SetMode(2);
-        }
+                SetMode(0);
+            }
+            break;
+
+        case 0: // HBlank
+            if(lineCycles >= 204)
+            {
+                lineCycles -= 204;
+
+                ly++;
+
+                if(ly == 144)
+                {
+                    SetMode(1);
+                    vBlankInterrupt = true;
+                    frameReady = true;
+                }
+                else
+                {
+                    SetMode(2);
+                }
+            }
+            break;
+
+        case 1: // VBlank
+            if(lineCycles >= 456)
+            {
+                lineCycles -= 456;
+
+                ly++;
+
+                if(ly > 153)
+                {
+                    ly = 0;
+                    SetMode(2);
+                }
+            }
+            break;
     }
 }
 
@@ -264,4 +297,37 @@ void PPU::RenderSprites()
 uint8_t* PPU::GetFrameBuffer()
 {
     return framebuffer;
+}
+
+void PPU::Reset()
+{
+    lcdc = 0x91;
+    stat = 0x85;
+
+    scy = 0x00;
+    scx = 0x00;
+
+    ly = 0x00;
+    lyc = 0x00;
+
+    bgp = 0xFC;
+    obp0 = 0xFF;
+    obp1 = 0xFF;
+
+    wy = 0x00;
+    wx = 0x00;
+
+    dma = 0;
+
+    lineCycles = 0;
+
+    vBlankInterrupt = false;
+
+    mode = 2;
+
+    for (int i = 0; i < 0x2000; i++)
+        vram[i] = 0;
+
+    for (int i = 0; i < 0xA0; i++)
+        oam[i] = 0;
 }

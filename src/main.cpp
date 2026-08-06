@@ -6,16 +6,34 @@
 #include <SDL.h>
 
 #include "Display.h"
+#include "FileDialog.h"
+#include <nfd.h>
 
 
 int main()
 {
-    Emulator emulator("../tests/Tetris (JUE) (V1.1) [!].gb");
+    NFD_Init();
+    Emulator emulator;
+    std::string romPath;
+
+    if (!OpenROMDialog(romPath))
+    {
+       std::cout << "No ROM selected\n";
+        return 0;
+    }
+
+    if (!emulator.setROM(romPath))
+    {
+        return 1;
+    }
+
     Display display;
     Joypad* joypad = emulator.GetJoypad();
 
     bool running = true;
+    bool paused = false;
     const int frameDelay = 1000 / 60;
+
 
     while (running)
     {
@@ -64,6 +82,13 @@ int main()
                     case SDLK_BACKSPACE:
                         joypad->Press(SELECT);
                         break;
+                    
+                    case SDLK_p:
+                        paused = !paused;
+                        break;
+                    case SDLK_r:
+                        emulator.Reset();
+                        break;
                 }
             }
             if(event.type == SDL_KEYUP)
@@ -105,20 +130,26 @@ int main()
             }
         }
 
-        while(!emulator.FrameReady())
+        if(!paused) 
         {
-            emulator.Step();
-        }
+            while(!emulator.FrameReady())
+            {
+                emulator.Step();
+            }
 
-        display.Render(emulator.GetFrameBuffer());
-        emulator.ClearFrameReady();
-         
-        uint32_t frameTime = SDL_GetTicks() - frameStart;
 
-        if(frameTime < frameDelay)
-        {
-            SDL_Delay(frameDelay - frameTime);
+            display.Render(emulator.GetFrameBuffer());
+            emulator.ClearFrameReady();
+            
+            uint32_t frameTime = SDL_GetTicks() - frameStart;
+
+            if(frameTime < frameDelay)
+            {
+                SDL_Delay(frameDelay - frameTime);
+            }
         }
     }
+
+    NFD_Quit();
     return 0;
 }

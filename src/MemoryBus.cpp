@@ -188,7 +188,9 @@ void MemoryBus::Tick(int cycles)
     ppu.Tick(cycles);
 
     if (timer.GetInterrupt())
-    {
+    { 
+        std::cout << "TIMER IRQ\n";
+        
         If |= 0x04;
         timer.ClearInterrupt();
     }
@@ -217,4 +219,10 @@ void MemoryBus::ClearFrameReady()
 Joypad* MemoryBus::GetJoypad()
 {
     return &joypad;
+}
+
+void MemoryBus::Reset()
+{
+    serialData = 0;
+    ppu.Reset();
 }
