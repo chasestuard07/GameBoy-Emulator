@@ -2,8 +2,6 @@
 #include <nfd.h>
 #include <iostream>
 
-#include "FileDialog.h"
-#include <nfd.h>
 
 bool OpenROMDialog(std::string& path)
 {

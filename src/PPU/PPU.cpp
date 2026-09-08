@@ -240,19 +240,24 @@ uint8_t PPU::LocateTile(int screenX, int screenY)
 
 void PPU::RenderScanline()
 {
-    int y = ly;
-    
-    for(int x = 0; x <= 159; x++) 
+    uint8_t bgY = ly + scy;
+
+    for (int x = 0; x < 160; x++)
     {
-        uint8_t tileNumber = LocateTile(x, y);
+        uint8_t bgX = x + scx;
+
+        uint8_t tileNumber = LocateTile(bgX, bgY);
         uint16_t tileAddress = 0x8000 + (tileNumber * 16);
-        int pixelX = x % 8;
-        int pixelY = y % 8;
+
+        int pixelX = bgX % 8;
+        int pixelY = bgY % 8;
+
         uint8_t color = GetTilePixel(tileAddress, pixelX, pixelY);
 
-        framebuffer[y * 160 + x] = color;
+        framebuffer[ly * 160 + x] = color;
     }
 }
+
 void PPU::RenderSprites()
 {
     for(int i = 0; i < 40; i++)

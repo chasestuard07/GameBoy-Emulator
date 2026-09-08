@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Cartridge.h"
-#include "CPU.h"
-#include "MemoryBus.h"
-#include "PPU.h"
+#include "Cartridge/Cartridge.h"
+#include "CPU/CPU.h"
+#include "MemoryBus/MemoryBus.h"
+#include "PPU/PPU.h"
 
 class Emulator
 {

@@ -1,12 +1,12 @@
 #include <iostream>
-#include "Emulator.h"
+#include "Emulator/Emulator.h"
 #include <filesystem>
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
-#include "Display.h"
-#include "FileDialog.h"
+#include "Display/Display.h"
+#include "FileDialog/FileDialog.h"
 #include <nfd.h>
 
 

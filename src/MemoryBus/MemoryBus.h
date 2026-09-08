@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Cartridge.h"
-#include "Timer.h"
-#include "PPU.h"
-#include "Joypad.h"
+#include "Cartridge/Cartridge.h"
+#include "Timer/Timer.h"
+#include "PPU/PPU.h"
+#include "Joypad/Joypad.h"
 
 struct MemoryRegion
 {

@@ -8,21 +8,31 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(SDL2 REQUIRED)
 add_subdirectory(libraries/nativefiledialog-extended-master)
 
-
-include_directories(include)
-
 add_executable(GameBoyEmulator
     src/main.cpp
-    src/Emulator.cpp
-    src/CPU.cpp
-    src/Cartridge.cpp
-    src/MemoryBus.cpp
-    src/Timer.cpp
-    src/Joypad.cpp
-    src/PPU.cpp
-    src/Display.cpp
-    src/FileDialog.cpp
+    src/Emulator/Emulator.cpp
+    src/Cartridge/Cartridge.cpp
+    src/MemoryBus/MemoryBus.cpp
+    src/Timer/Timer.cpp
+    src/Joypad/Joypad.cpp
+    src/PPU/PPU.cpp
+    src/Display/Display.cpp
+    src/FileDialog/FileDialog.cpp
+
+    src/CPU/CPU.cpp
+    src/CPU/CPU_Load.cpp
+    src/CPU/CPU_CB.cpp
+    src/CPU/CPU_Arithmetic.cpp
+    src/CPU/CPU_Control.cpp
+    src/CPU/CPU_Interrupts.cpp
+    src/CPU/CPU_Registers.cpp
+    src/CPU/CPU_Misc.cpp
 )
+
+target_include_directories(GameBoyEmulator PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 
 target_link_libraries(GameBoyEmulator PRIVATE SDL2::SDL2)
 target_link_libraries(GameBoyEmulator PRIVATE nfd)

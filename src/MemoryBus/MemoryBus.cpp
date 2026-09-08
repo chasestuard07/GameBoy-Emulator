@@ -63,6 +63,10 @@ uint8_t MemoryBus::Read(uint16_t address)
             case 0xFF00:
                 return joypad.Read();
 
+            // IF
+            case 0xFF0F:
+                return If;
+
             // PPU registers
             case 0xFF40: // LCDC
             case 0xFF41: // STAT
@@ -92,10 +96,6 @@ uint8_t MemoryBus::Read(uint16_t address)
     else if (address == 0xFFFF) // IE
     {
         return ie;
-    }
-    else if (address == 0xFF0F) // IF
-    {
-        return If;
     }
     else
     {
@@ -166,6 +166,10 @@ void MemoryBus::Write(uint16_t address, uint8_t value)
             }
                 return;
         }
+        if (address == IF.end)
+        {  
+            If = value;
+        }
         
     }
     else if (address >= HRAM.start && address <= HRAM.end)
@@ -176,10 +180,6 @@ void MemoryBus::Write(uint16_t address, uint8_t value)
     {  
         ie = value;
     }
-    else if (address == IF.end)
-    {  
-        If = value;
-    }
 }
 
 void MemoryBus::Tick(int cycles)
@@ -189,8 +189,6 @@ void MemoryBus::Tick(int cycles)
 
     if (timer.GetInterrupt())
     { 
-        std::cout << "TIMER IRQ\n";
-        
         If |= 0x04;
         timer.ClearInterrupt();
     }

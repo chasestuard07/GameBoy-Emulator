@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MemoryBus.h"
+#include "MemoryBus/MemoryBus.h"
 #include <cstdint>
 #include <iostream>
 #include <fstream>
@@ -16,12 +16,10 @@ public:
     int Step();
     int Execute();
 
-    void Debug();
-
     bool IsHalted();
 
     bool debugMode;
-
+    uint16_t Debug();
     void Reset();
 
 private:
@@ -29,13 +27,10 @@ private:
     uint8_t opcode;
     bool halt;
     bool IME;
-
-    std::ofstream trace;
-
-
     int InterruptDelayTimer;
     bool stop;
 
+    //Registers
     uint8_t A;
     uint8_t B;
     uint8_t C;
@@ -47,6 +42,18 @@ private:
     uint16_t PC;
     uint16_t SP;
 
+    void WriteWord(uint16_t address, uint16_t value);
+    uint8_t FetchByte();
+    uint16_t FetchWord();
+
+    //CPU_Load
+    void LDrd8(uint8_t& r);
+    void LDrtr(uint8_t& r1 ,uint8_t& r2);
+    void LdAHL(bool increment);
+    void LdHLA(bool increment);
+    void LdHLSPr8();
+
+    //CPU_CB
     int Cb();
     uint8_t ReadCB(uint8_t reg);
     void WriteCB(uint8_t reg, uint8_t value);
@@ -62,9 +69,7 @@ private:
     void Res(uint8_t bit, uint8_t reg);
     void Set(uint8_t bit, uint8_t reg);
 
-    void LDrd8(uint8_t& r);
-    void LDrtr(uint8_t& r1 ,uint8_t& r2);
-
+    //CPU_Arithmetic
     void Inc(uint8_t& r);
     void Dec(uint8_t& r);
     void Add(uint8_t value);
@@ -75,35 +80,34 @@ private:
     void Or(uint8_t value);
     void Xor(uint8_t value);
     void Cp(uint8_t value);
-
-    bool Jp(bool condition);
-    bool Jr(bool condition);
-
+    uint16_t Inc16(uint16_t r);
+    uint16_t Dec16(uint16_t r);
+    uint16_t Add16(uint16_t r1, uint16_t r2);
+    void IncHL();
+    void DecHL();
+    uint16_t AddSignedSP(uint8_t rawOffset);
+    void Daa();
     void Scf();
     void Cpl();
     void Ccf();
 
-    void Di();
-
-    void Rlca();
-    void Rrca();
-    void Rla();
-    void Rra();
-
+    //CPU_Control
     void PushWord(uint16_t word);
     uint16_t PopWord();
-    void WriteWord(uint16_t address, uint16_t value);
-
-
-
-    uint8_t FetchByte();
-    uint16_t FetchWord();
     bool Call(bool condition);
     bool Ret(bool condition);
     void Reti();
     void Rst(uint16_t address);
+    bool Jp(bool condition);
+    bool Jr(bool condition);
+    void Stop();
 
+    //CPU_Interrupts
+    void Di();
+    void HandleInterrupts();
+    void HandleIE();
 
+    //CPU_Registers
     uint16_t GetBC();
     void SetBC(uint16_t value);
     uint16_t GetDE();
@@ -113,21 +117,6 @@ private:
     void SetSP(uint16_t value);
     uint16_t GetAF();
     void SetAF(uint16_t value);
-
-
-    uint16_t Inc16(uint16_t r);
-    uint16_t Dec16(uint16_t r);
-    uint16_t Add16(uint16_t r1, uint16_t r2);
-
-    void LdAHL(bool increment);
-    void LdHLA(bool increment);
-    void IncHL();
-    void DecHL();
-    void LdHLSPr8();
-    void Daa();
-
-    uint16_t AddSignedSP(uint8_t rawOffset);
-
     void SetZeroFlag(bool b);
     bool GetZeroFlag();
     void SetSubtractFlag(bool b);
@@ -137,8 +126,10 @@ private:
     void SetCarryFlag(bool b);
     bool GetCarryFlag();
 
-    void HandleInterrupts();
-    void HandleIE();
-    void Stop();
+    //CPU_Misc
+    void Rlca();
+    void Rrca();
+    void Rla();
+    void Rra();
 
 };
