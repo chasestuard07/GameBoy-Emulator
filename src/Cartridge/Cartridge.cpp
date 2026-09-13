@@ -23,18 +23,34 @@ bool Cartridge::LoadROM(std::string filename)
 
     romLoaded = true;
 
+    //set the mbc type based on the header
+    mbcType = rom[0x0147];
+    if (mbcType == 0x00)
+    {
+
+    }
+    if (mbcType >= 0x01 && mbcType <= 0x03)
+    {
+        mbc = new MBC1(rom);
+    }
+
     return true;
 }
 uint8_t Cartridge::Read(uint16_t address) 
 {
-    if (address >= rom.size())
+    if (mbc != nullptr) return mbc->Read(address);
+    else 
     {
-        return 0xFF;
-    }
+        if (address >= rom.size())
+        {
+            return 0xFF;
+        }
 
-    return rom[address];
+        return rom[address];
+    }
 }
 void Cartridge::Write(uint16_t address, uint8_t value) 
 {
-
+    if (mbc == nullptr) return;
+    mbc->Write(address, value);
 }

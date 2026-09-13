@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MBC.h"
+#include "MBC1.h"
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -17,4 +19,7 @@ public:
 private: 
     std::vector<uint8_t> rom;
     bool romLoaded;
+
+    MBC* mbc = nullptr;
+    uint8_t mbcType;
 };

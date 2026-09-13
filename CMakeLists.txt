@@ -11,13 +11,15 @@ add_subdirectory(libraries/nativefiledialog-extended-master)
 add_executable(GameBoyEmulator
     src/main.cpp
     src/Emulator/Emulator.cpp
-    src/Cartridge/Cartridge.cpp
     src/MemoryBus/MemoryBus.cpp
     src/Timer/Timer.cpp
     src/Joypad/Joypad.cpp
     src/PPU/PPU.cpp
     src/Display/Display.cpp
     src/FileDialog/FileDialog.cpp
+
+    src/Cartridge/Cartridge.cpp
+    src/Cartridge/MBC1.cpp
 
     src/CPU/CPU.cpp
     src/CPU/CPU_Load.cpp
